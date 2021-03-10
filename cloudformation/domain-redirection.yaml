@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  FromDomain:
+    Type: String
+    Description: Origin domain name to redirect, e.g. example.com
+  ToDomain:
+    Type: String
+    Description: Destination domain name, e.g. www.example.com
+  SSLCertificateArn:
+    Type: String
+    Description: Arn for an SSL certificate that covers the origin domain
+  HostedZoneId:
+    Type: String
+    Description: HostedZone to create record for the origin domain
+Resources:
+  RedirectBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref FromDomain
+      WebsiteConfiguration:
+        RedirectAllRequestsTo:
+          HostName: !Ref ToDomain
+          Protocol: https
+  RedirectDistribution:
+    Type: "AWS::CloudFront::Distribution"
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - DomainName:
+              !Select [2, !Split ["/", !GetAtt RedirectBucket.WebsiteURL]]
+            Id: !Ref RedirectBucket
+            CustomOriginConfig:
+              HTTPPort: "80"
+              HTTPSPort: "443"
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref RedirectBucket
+          ForwardedValues:
+            QueryString: false
+          ViewerProtocolPolicy: allow-all
+        Aliases:
+          - !Ref FromDomain
+        ViewerCertificate:
+          AcmCertificateArn: !Ref SSLCertificateArn
+          SslSupportMethod: sni-only
+  RedirectRecord:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref FromDomain
+      Type: A
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt RedirectDistribution.DomainName

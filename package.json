@@ -6,7 +6,7 @@
   "scripts": {
     "start": "snowpack dev",
     "build": "snowpack build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "./scripts/deploy.sh"
   },
   "author": "Jair Trejo <jair@jairtrejo.com>",
   "license": "MIT",

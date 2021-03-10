@@ -43,8 +43,7 @@ const targetSquares = "87654321"
   .reduce((prev, curr) => prev.concat(curr), [])
   .filter((square) => !attackedByQueenSquares.has(square));
 
-
-//const targetSquares = ["h8", "g6", "f8"];
+//const targetSquares = ["h8", "g6", "f8", "h7"];
 
 function resetTurn(fen: string, color: string) {
   const [
@@ -56,6 +55,24 @@ function resetTurn(fen: string, color: string) {
     fullmove,
   ] = fen.split(" ");
   return [pieces, color, castling, enpassant, "0", "1"].join(" ");
+}
+
+type LinkProps = {
+  href: string;
+  external: boolean;
+  children?: React.ReactNode;
+};
+
+function Link({ href, external, children }: LinkProps) {
+  return (
+    <a
+      className="text-orange font-bold"
+      href={href}
+      {...(external ? { target: "_blank" } : {})}
+    >
+      {children}
+    </a>
+  );
 }
 
 type TimerProps = {
@@ -113,7 +130,7 @@ type ProgressIndicatorProps = {
   progress: number;
 };
 
-function ProgressIndicator({
+function RoundProgressIndicator({
   nextSquare,
   time,
   progress,
@@ -122,7 +139,7 @@ function ProgressIndicator({
   const percentArc = fullArc - fullArc * progress;
 
   return (
-    <svg viewBox="0 0 100 100">
+    <svg className="max-w-xs mx-auto hidden lg:block" viewBox="0 0 100 100">
       <circle
         className="gauge_base"
         cx="50"
@@ -173,6 +190,27 @@ function ProgressIndicator({
   );
 }
 
+function StraightProgressIndicator({
+  nextSquare,
+  time,
+  progress,
+}: ProgressIndicatorProps){
+  return (
+    <div className="block lg:hidden my-4">
+      <div className="flex flex-row justify-between text-xl mb-2">
+        <span className="font-bold">{nextSquare}</span>
+        <span>{time}</span>
+      </div>
+      <div className="bg-yellow w-100 h-6">
+        <div
+          className="bg-orange h-6"
+          style={{ width: `${progress * 100}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+}
+
 /*
  * Main app
  */
@@ -183,8 +221,6 @@ export default function App() {
   useEffect(() => {
     chessRef.current.load(position);
   }, [position]);
-
-  const [victory, setVictory] = useState<boolean>(false);
 
   const [nextSquareIndex, setNextSquareIndex] = useState(1);
 
@@ -205,15 +241,18 @@ export default function App() {
       const isCheating = isCapturingQueen || canBeCapturedByQueen;
 
       if (knightMove && !isCheating) {
-        if (nextSquareIndex === targetSquares.length - 1) {
-          setVictory(true);
-          setStopTime(new Date());
+        console.log("Valid knight move");
+        console.log(stopTime, targetSquare, nextSquareIndex, targetSquares);
+
+        if (targetSquare === targetSquares[nextSquareIndex]) {
+          console.log("Incrementing nextSquareIndex", nextSquareIndex + 1);
+          setNextSquareIndex((nextSquareIndex) => nextSquareIndex + 1);
+
+          if (!stopTime && nextSquareIndex === targetSquares.length - 1) {
+            setStopTime(new Date());
+          }
         }
-        setNextSquareIndex((nextSquareIndex) =>
-          targetSquare === targetSquares[nextSquareIndex]
-            ? nextSquareIndex + 1
-            : nextSquareIndex
-        );
+
         setPosition(resetTurn(chess.fen(), "w"));
         if (!startTime) {
           setStartTime(new Date());
@@ -224,6 +263,7 @@ export default function App() {
     },
     [
       chessRef,
+      nextSquareIndex,
       setNextSquareIndex,
       setPosition,
       resetTurn,
@@ -237,41 +277,81 @@ export default function App() {
     setNextSquareIndex(1);
     setStartTime(undefined);
     setStopTime(undefined);
-    setVictory(false);
   }, [setPosition, setNextSquareIndex, setStartTime]);
 
+  const calcWidth = useCallback(({ screenWidth }) => {
+    return Math.min(screenWidth - 32 - 8, 560);
+  }, []);
+
   return (
-    <>
-      <img
-        srcSet="/images/knight-moves.png 1x, /images/knight-moves@2x.png 2x"
-        src="/images/knight-moves.png"
-        alt="Ain't it funny how the knight moves?"
-      />
-      <p>
-        Move the knight to every square, right to left, top to bottom. Don’t
-        land anywhere the queen can take you, and don’t take the queen.
-      </p>
-      <div style={{ width: "200px" }}>
-        <ProgressIndicator
-          nextSquare={victory ? "w" : targetSquares[nextSquareIndex]}
+    <main className="max-w-screen-lg mx-auto flex flex-col lg:flex-row pt-6 lg:pt-8 h-screen lg:h-auto">
+      <section className="flex flex-col px-4 lg:px-0 lg:pr-6 pb-6 lg:pb-0">
+        <h1 className="pb-4 mx-auto lg:mx-0">
+          <img
+            className="max-w-full h-auto"
+            srcSet="/images/knight-moves.png 1x, /images/knight-moves@2x.png 2x"
+            src="/images/knight-moves.png"
+            alt="Ain't it funny how the knight moves?"
+          />
+        </h1>
+        <p className="hidden lg:block pb-4 text-m lg:text-lg">
+          Move the knight to every square, right to left, top to bottom. Don’t
+          land anywhere the queen can take you, and don’t take the queen.
+        </p>
+        <RoundProgressIndicator
+          nextSquare={
+            stopTime ? "\ud83d\udc4d" : targetSquares[nextSquareIndex]
+          }
           time={<Timer startTime={startTime} stopTime={stopTime} />}
           progress={nextSquareIndex / targetSquares.length}
         />
-      </div>
-      <p>
-        <button type="button" onClick={reset}>
-          Reset
-        </button>
-      </p>
-      <Chessboard allowDrag={allowDrag} onDrop={onDrop} position={position} />
-      <p>
-        Made by <a href="https://www.jairtrejo.com">Jair Trejo</a>. Inspired by{" "}
-        <a href="https://www.youtube.com/watch?v=SrQlpY_eGYU">Ben Finegold</a>{" "}
-        and{" "}
-        <a href="https://open.spotify.com/track/6UBjSnyP1O5W5ndJoO9vUk?si=647834336235421b">
-          Bob Seger
-        </a>
-      </p>
-    </>
+        <p className="text-center">
+          <button
+            className="border-4 text-lg border-orange text-orange px-12 py-1 w-full lg:w-auto"
+            type="button"
+            onClick={reset}
+          >
+            Reset
+          </button>
+        </p>
+      </section>
+      <section className="flex flex-col flex-1 px-4">
+        <div className="m-auto border-brown border-4">
+          <Chessboard
+            calcWidth={calcWidth}
+            allowDrag={allowDrag}
+            onDrop={onDrop}
+            position={position}
+          />
+        </div>
+        <StraightProgressIndicator
+          nextSquare={
+            stopTime ? "\ud83d\udc4d" : targetSquares[nextSquareIndex]
+          }
+          time={<Timer startTime={startTime} stopTime={stopTime} />}
+          progress={nextSquareIndex / targetSquares.length}
+        />
+        <p className="py-4 lg:text-center">
+          Made by{" "}
+          <Link href="https://www.jairtrejo.com" external>
+            Jair Trejo
+          </Link>
+          .{" "}
+          <span className="block lg:inline">
+            Inspired by{" "}
+            <Link href="https://www.youtube.com/watch?v=SrQlpY_eGYU" external>
+              Ben Finegold
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="https://open.spotify.com/track/6UBjSnyP1O5W5ndJoO9vUk?si=647834336235421b"
+              external
+            >
+              Bob Seger
+            </Link>.
+          </span>
+        </p>
+      </section>
+    </main>
   );
 }

@@ -1,0 +1,22 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  StaticSite:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "static-site.yaml"
+      Parameters:
+        DomainName: funnyhowtheknightmoves.com
+        SubDomain: www
+  ApexRedirect:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: "domain-redirection.yaml"
+      Parameters:
+        FromDomain: funnyhowtheknightmoves.com
+        ToDomain: www.funnyhowtheknightmoves.com
+        SSLCertificateArn: !GetAtt StaticSite.Outputs.SSLCertificateArn
+        HostedZoneId: !GetAtt StaticSite.Outputs.HostedZoneId
+Outputs:
+  NameServers:
+    Description: Name servers to set in your domain registrar.
+    Value: !GetAtt StaticSite.Outputs.NameServers
