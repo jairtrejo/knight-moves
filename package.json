@@ -23,6 +23,7 @@
     "postcss-cli": "^8.3.1",
     "postcss-preset-env": "^6.7.0",
     "snowpack": "^3.0.13",
+    "snowpack-plugin-hash": "^0.14.2",
     "tailwindcss": "^2.0.3"
   },
   "dependencies": {

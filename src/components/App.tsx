@@ -288,6 +288,8 @@ export default function App() {
       <section className="flex flex-col px-4 lg:px-0 lg:pr-6 pb-6 lg:pb-0">
         <h1 className="pb-4 mx-auto lg:mx-0">
           <img
+            width="394"
+            height="121"
             className="max-w-full h-auto"
             srcSet="/images/knight-moves.png 1x, /images/knight-moves@2x.png 2x"
             src="/images/knight-moves.png"
@@ -348,7 +350,8 @@ export default function App() {
               external
             >
               Bob Seger
-            </Link>.
+            </Link>
+            .
           </span>
         </p>
       </section>
