@@ -1,0 +1,25 @@
+{
+  "short_name": "Knight moves",
+  "name": "Ain't it funny how the knight moves?",
+  "icons": [
+    {
+      "src": "./images/icon-maskable-small.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./images/icon-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F5E6D0",
+  "orientation": "portrait",
+  "display": "fullscreen",
+  "scope": "/",
+  "theme_color": "#481D24",
+  "description": "A tool to practice your chess knight moves"
+}

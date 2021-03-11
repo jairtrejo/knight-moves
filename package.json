@@ -5,7 +5,9 @@
   "main": "src/index.ts",
   "scripts": {
     "start": "snowpack dev",
-    "build": "snowpack build",
+    "build:workbox": "workbox generateSW workbox-config.js",
+    "build:snowpack": "snowpack build",
+    "build": "npm run build:snowpack && npm run build:workbox",
     "deploy": "./scripts/deploy.sh"
   },
   "author": "Jair Trejo <jair@jairtrejo.com>",
@@ -30,6 +32,7 @@
     "chess.js": "^0.11.0",
     "chessboardjsx": "^2.4.2",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "workbox-cli": "^6.1.1"
   }
 }

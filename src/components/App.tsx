@@ -66,6 +66,7 @@ type LinkProps = {
 function Link({ href, external, children }: LinkProps) {
   return (
     <a
+      rel="noreferrer"
       className="text-orange font-bold"
       href={href}
       {...(external ? { target: "_blank" } : {})}
