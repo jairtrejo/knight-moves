@@ -198,7 +198,7 @@ export default function App() {
   const closeHelp = useCallback(() => setIsHelpOpen(false), [setIsHelpOpen]);
 
   return (
-    <main className="max-w-screen-lg mx-auto flex flex-col lg:flex-row py-8 lg:pt-8 h-screen lg:h-auto">
+    <main className="max-w-screen-lg mx-auto flex flex-col lg:flex-row pt-10 pb-8 lg:pt-8 h-screen lg:h-auto">
       <section className="flex flex-col px-4 lg:px-0 lg:pr-6 pb-6 lg:pb-0">
         <h1 className="pb-4 mx-auto lg:mx-0">
           <img
@@ -213,12 +213,12 @@ export default function App() {
         <p className="hidden lg:block pb-4 text-m lg:text-lg">{rules}</p>
         <RoundProgressIndicator {...progressIndicatorProps} />
         <div className="flex flex-row -mx-2">
-          <div className="px-2 flex-1">
+          <div className="px-2 flex-1 text-center">
             <Button primary onClick={reset}>
               Reset
             </Button>
           </div>
-          <div className="lg:hidden px-2 flex-1">
+          <div className="lg:hidden px-2 flex-1 text-center">
             <Button onClick={openHelp}>Help</Button>
           </div>
         </div>
