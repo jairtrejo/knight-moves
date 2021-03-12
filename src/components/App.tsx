@@ -1,6 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useReducer, useState } from "react";
 import Chessboard from "chessboardjsx";
 import { Chess, ChessInstance } from "chess.js";
+import { Button, Link, Modal } from "./styled";
+import {
+  RoundProgressIndicator,
+  StraightProgressIndicator,
+} from "./ProgressIndicator";
 
 const queenSquare = "d5";
 const startingPosition = "7N/8/8/3q4/8/8/8/8 w - - 0 1";
@@ -8,7 +13,6 @@ const attackedByQueenSquares = new Set([
   "d8",
   "d7",
   "d6",
-  "d5",
   "d4",
   "d3",
   "d2",
@@ -16,7 +20,6 @@ const attackedByQueenSquares = new Set([
   "g8",
   "f7",
   "e6",
-  "d5",
   "c4",
   "b3",
   "a2",
@@ -24,7 +27,6 @@ const attackedByQueenSquares = new Set([
   "g5",
   "f5",
   "e5",
-  "d5",
   "c5",
   "b5",
   "a5",
@@ -32,7 +34,6 @@ const attackedByQueenSquares = new Set([
   "g2",
   "f3",
   "e4",
-  "d5",
   "c6",
   "b7",
   "a8",
@@ -41,251 +42,163 @@ const targetSquares = "87654321"
   .split("")
   .map((rank) => "hgfedcba".split("").map((file) => `${file}${rank}`))
   .reduce((prev, curr) => prev.concat(curr), [])
-  .filter((square) => !attackedByQueenSquares.has(square));
+  .filter(
+    (square) => square !== queenSquare && !attackedByQueenSquares.has(square)
+  );
 
-//const targetSquares = ["h8", "g6", "f8", "h7"];
+//const targetSquares = ["h8", "g6", "f8", "h7", "f6"];
 
-function resetTurn(fen: string, color: string) {
-  const [
-    pieces,
-    _activeColor,
-    castling,
-    enpassant,
-    halfmove,
-    fullmove,
-  ] = fen.split(" ");
+function resetTurn(fen: string, color: "w" | "b") {
+  const [pieces, , castling, enpassant, , ,] = fen.split(" ");
   return [pieces, color, castling, enpassant, "0", "1"].join(" ");
-}
-
-type LinkProps = {
-  href: string;
-  external: boolean;
-  children?: React.ReactNode;
-};
-
-function Link({ href, external, children }: LinkProps) {
-  return (
-    <a
-      rel="noreferrer"
-      className="text-orange font-bold"
-      href={href}
-      {...(external ? { target: "_blank" } : {})}
-    >
-      {children}
-    </a>
-  );
-}
-
-type TimerProps = {
-  startTime?: Date;
-  stopTime?: Date;
-};
-
-function padTime(str: number): string {
-  const padded = `0${str}`;
-  return padded.substring(padded.length - 2);
-}
-
-function formatTime(timeMillis: number): string {
-  timeMillis = Math.round(timeMillis / 1000);
-  const s = timeMillis % 60;
-  const m = ((timeMillis - s) / 60) % 60;
-  const h = (timeMillis - s - m * 60) / 3600;
-  return (h > 0 ? h + ":" : "") + (h > 0 ? padTime(m) : m) + ":" + padTime(s);
-}
-
-function Timer({ startTime, stopTime }: TimerProps) {
-  const [time, setTime] = useState<string>("00:00");
-  const updateCount = useCallback(() => {
-    if (!startTime) {
-      return;
-    }
-
-    let elapsed;
-    if (stopTime) {
-      elapsed = stopTime.getTime() - startTime.getTime();
-    } else {
-      const now = new Date();
-      elapsed = now.getTime() - startTime.getTime();
-    }
-    const formatted = formatTime(elapsed);
-
-    if (formatted !== time) {
-      setTime(formatted);
-    }
-  }, [startTime, stopTime, time, setTime]);
-  useEffect(() => {
-    const handle = setInterval(updateCount, 100);
-    return () => clearInterval(handle);
-  }, [updateCount, startTime, stopTime]);
-  return <>{startTime ? time : ""}</>;
-}
-
-/*
- * Progress bar
- */
-
-type ProgressIndicatorProps = {
-  nextSquare: React.ReactNode;
-  time: React.ReactNode;
-  progress: number;
-};
-
-function RoundProgressIndicator({
-  nextSquare,
-  time,
-  progress,
-}: ProgressIndicatorProps) {
-  const fullArc = 198;
-  const percentArc = fullArc - fullArc * progress;
-
-  return (
-    <svg className="max-w-xs mx-auto hidden lg:block" viewBox="0 0 100 100">
-      <circle
-        className="gauge_base"
-        cx="50"
-        cy="50"
-        fill="transparent"
-        r="42"
-        stroke="#FFC857"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeDasharray="198 264"
-        transform="rotate(135, 50, 50)"
-      />
-      <circle
-        className="gauge_percent"
-        style={{ transition: "stroke-dashoffset 0.2s linear" }}
-        cx="50"
-        cy="50"
-        fill="transparent"
-        r="42"
-        stroke="#E9724C"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeDasharray="198 264"
-        strokeDashoffset={percentArc}
-        transform="rotate(135, 50, 50)"
-      />
-      <text
-        fontSize="32"
-        fill="#481d24"
-        x="50"
-        y="45"
-        dominantBaseline="middle"
-        textAnchor="middle"
-      >
-        {nextSquare}
-      </text>
-      <text
-        fontSize="8"
-        fill="#481d24"
-        x="50"
-        y="65"
-        dominantBaseline="middle"
-        textAnchor="middle"
-      >
-        {time}
-      </text>
-    </svg>
-  );
-}
-
-function StraightProgressIndicator({
-  nextSquare,
-  time,
-  progress,
-}: ProgressIndicatorProps){
-  return (
-    <div className="block lg:hidden my-4">
-      <div className="flex flex-row justify-between text-xl mb-2">
-        <span className="font-bold">{nextSquare}</span>
-        <span>{time}</span>
-      </div>
-      <div className="bg-yellow w-100 h-6">
-        <div
-          className="bg-orange h-6"
-          style={{ width: `${progress * 100}%` }}
-        ></div>
-      </div>
-    </div>
-  );
 }
 
 /*
  * Main app
  */
 
+type AppState = {
+  position: string;
+  nextSquareIndex: number;
+  startTime?: Date;
+  stopTime?: Date;
+};
+
+enum ActionTypes {
+  PlaceKnight = "PLACE_KNIGHT",
+  ResetGame = "RESET_GAME",
+}
+
+type Action =
+  | { type: ActionTypes.PlaceKnight; square: string }
+  | { type: ActionTypes.ResetGame };
+
 export default function App() {
   const chessRef = useRef<ChessInstance>(new Chess(startingPosition));
-  const [position, setPosition] = useState<string>(startingPosition);
-  useEffect(() => {
-    chessRef.current.load(position);
-  }, [position]);
 
-  const [nextSquareIndex, setNextSquareIndex] = useState(1);
+  const reducer = useCallback(
+    (state: AppState, action: Action) => {
+      const chess = chessRef.current;
 
-  const [startTime, setStartTime] = useState<Date | undefined>(undefined);
-  const [stopTime, setStopTime] = useState<Date | undefined>(undefined);
+      switch (action.type) {
+        case ActionTypes.PlaceKnight:
+          const targetSquare = action.square;
+
+          const knightMove = chess.move(`N${targetSquare}`);
+          const isCapturingQueen = targetSquare === queenSquare;
+          const canBeCapturedByQueen = attackedByQueenSquares.has(targetSquare);
+          const isCheating = isCapturingQueen || canBeCapturedByQueen;
+
+          if (knightMove && !isCheating) {
+            const newPosition = resetTurn(chess.fen(), "w");
+            const startTime = state.startTime || new Date();
+            let stopTime;
+            let nextSquareIndex = state.nextSquareIndex;
+
+            if (targetSquare === targetSquares[state.nextSquareIndex]) {
+              nextSquareIndex = nextSquareIndex + 1;
+
+              if (nextSquareIndex === targetSquares.length) {
+                stopTime = new Date();
+              }
+            }
+
+            chess.load(newPosition);
+
+            return {
+              ...state,
+              position: newPosition,
+              nextSquareIndex,
+              startTime,
+              stopTime,
+            };
+          } else {
+            chess.undo();
+            return state;
+          }
+
+        case ActionTypes.ResetGame:
+          chess.load(startingPosition);
+          return { position: startingPosition, nextSquareIndex: 1 };
+        default:
+          return state;
+      }
+    },
+    [chessRef.current]
+  );
+
+  const [state, dispatch] = useReducer(reducer, {
+    position: startingPosition,
+    nextSquareIndex: 1,
+  });
 
   const allowDrag = useCallback(({ piece }) => {
     return piece === "wN";
   }, []);
 
-  const onDrop = useCallback(
-    ({ sourceSquare, targetSquare }) => {
-      const chess = chessRef.current;
+  const onDrop = useCallback(({ targetSquare }) => {
+    dispatch({ type: ActionTypes.PlaceKnight, square: targetSquare });
+  }, []);
 
-      const knightMove = chess.move({ from: sourceSquare, to: targetSquare });
-      const isCapturingQueen = targetSquare === queenSquare;
-      const canBeCapturedByQueen = attackedByQueenSquares.has(targetSquare);
-      const isCheating = isCapturingQueen || canBeCapturedByQueen;
-
-      if (knightMove && !isCheating) {
-        console.log("Valid knight move");
-        console.log(stopTime, targetSquare, nextSquareIndex, targetSquares);
-
-        if (targetSquare === targetSquares[nextSquareIndex]) {
-          console.log("Incrementing nextSquareIndex", nextSquareIndex + 1);
-          setNextSquareIndex((nextSquareIndex) => nextSquareIndex + 1);
-
-          if (!stopTime && nextSquareIndex === targetSquares.length - 1) {
-            setStopTime(new Date());
-          }
-        }
-
-        setPosition(resetTurn(chess.fen(), "w"));
-        if (!startTime) {
-          setStartTime(new Date());
-        }
-      } else {
-        chess.undo();
-      }
-    },
-    [
-      chessRef,
-      nextSquareIndex,
-      setNextSquareIndex,
-      setPosition,
-      resetTurn,
-      startTime,
-      setStartTime,
-    ]
-  );
+  const onSquareClick = useCallback((square) => {
+    dispatch({ type: ActionTypes.PlaceKnight, square: square });
+  }, []);
 
   const reset = useCallback(() => {
-    setPosition(startingPosition);
-    setNextSquareIndex(1);
-    setStartTime(undefined);
-    setStopTime(undefined);
-  }, [setPosition, setNextSquareIndex, setStartTime]);
+    dispatch({ type: ActionTypes.ResetGame });
+  }, []);
 
   const calcWidth = useCallback(({ screenWidth }) => {
     return Math.min(screenWidth - 32 - 8, 560);
   }, []);
 
+  const progressIndicatorProps = {
+    nextSquare: state.stopTime
+      ? "\ud83d\udc4d"
+      : targetSquares[state.nextSquareIndex],
+
+    startTime: state.startTime,
+    stopTime: state.stopTime,
+    progress: state.nextSquareIndex / targetSquares.length,
+  };
+
+  const rules = (
+    <>
+      Move the knight to every square, right to left, top to bottom. Don’t land
+      anywhere the queen can take you, and don’t take the queen.
+    </>
+  );
+
+  const credits = (
+    <>
+      Made by{" "}
+      <Link href="https://www.jairtrejo.com" external>
+        Jair Trejo
+      </Link>
+      .{" "}
+      <span className="block lg:inline">
+        Inspired by{" "}
+        <Link href="https://www.youtube.com/watch?v=SrQlpY_eGYU" external>
+          Ben Finegold
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="https://open.spotify.com/track/6UBjSnyP1O5W5ndJoO9vUk?si=647834336235421b"
+          external
+        >
+          Bob Seger
+        </Link>
+        .
+      </span>
+    </>
+  );
+
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const openHelp = useCallback(() => setIsHelpOpen(true), [setIsHelpOpen]);
+  const closeHelp = useCallback(() => setIsHelpOpen(false), [setIsHelpOpen]);
+
   return (
-    <main className="max-w-screen-lg mx-auto flex flex-col lg:flex-row pt-6 lg:pt-8 h-screen lg:h-auto">
+    <main className="max-w-screen-lg mx-auto flex flex-col lg:flex-row py-8 lg:pt-8 h-screen lg:h-auto">
       <section className="flex flex-col px-4 lg:px-0 lg:pr-6 pb-6 lg:pb-0">
         <h1 className="pb-4 mx-auto lg:mx-0">
           <img
@@ -297,26 +210,18 @@ export default function App() {
             alt="Ain't it funny how the knight moves?"
           />
         </h1>
-        <p className="hidden lg:block pb-4 text-m lg:text-lg">
-          Move the knight to every square, right to left, top to bottom. Don’t
-          land anywhere the queen can take you, and don’t take the queen.
-        </p>
-        <RoundProgressIndicator
-          nextSquare={
-            stopTime ? "\ud83d\udc4d" : targetSquares[nextSquareIndex]
-          }
-          time={<Timer startTime={startTime} stopTime={stopTime} />}
-          progress={nextSquareIndex / targetSquares.length}
-        />
-        <p className="text-center">
-          <button
-            className="border-4 text-lg border-orange text-orange px-12 py-1 w-full lg:w-auto"
-            type="button"
-            onClick={reset}
-          >
-            Reset
-          </button>
-        </p>
+        <p className="hidden lg:block pb-4 text-m lg:text-lg">{rules}</p>
+        <RoundProgressIndicator {...progressIndicatorProps} />
+        <div className="flex flex-row -mx-2">
+          <div className="px-2 flex-1">
+            <Button primary onClick={reset}>
+              Reset
+            </Button>
+          </div>
+          <div className="lg:hidden px-2 flex-1">
+            <Button onClick={openHelp}>Help</Button>
+          </div>
+        </div>
       </section>
       <section className="flex flex-col flex-1 px-4">
         <div className="m-auto border-brown border-4">
@@ -324,38 +229,22 @@ export default function App() {
             calcWidth={calcWidth}
             allowDrag={allowDrag}
             onDrop={onDrop}
-            position={position}
+            onSquareClick={onSquareClick}
+            position={state.position}
           />
         </div>
-        <StraightProgressIndicator
-          nextSquare={
-            stopTime ? "\ud83d\udc4d" : targetSquares[nextSquareIndex]
-          }
-          time={<Timer startTime={startTime} stopTime={stopTime} />}
-          progress={nextSquareIndex / targetSquares.length}
-        />
-        <p className="py-4 lg:text-center">
-          Made by{" "}
-          <Link href="https://www.jairtrejo.com" external>
-            Jair Trejo
-          </Link>
-          .{" "}
-          <span className="block lg:inline">
-            Inspired by{" "}
-            <Link href="https://www.youtube.com/watch?v=SrQlpY_eGYU" external>
-              Ben Finegold
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="https://open.spotify.com/track/6UBjSnyP1O5W5ndJoO9vUk?si=647834336235421b"
-              external
-            >
-              Bob Seger
-            </Link>
-            .
-          </span>
-        </p>
+        <StraightProgressIndicator {...progressIndicatorProps} />
+        <p className="py-4 hidden lg:block lg:text-center">{credits}</p>
       </section>
+      <Modal open={isHelpOpen}>
+        <p className="text-m pb-2">{rules}</p>
+        <p className="text-m pb-2">{credits}</p>
+        <p className="text-m pt-2">
+          <Button primary onClick={closeHelp}>
+            Ok
+          </Button>
+        </p>
+      </Modal>
     </main>
   );
 }
