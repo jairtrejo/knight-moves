@@ -15,11 +15,11 @@
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "background_color": "#F5E6D0",
   "orientation": "portrait",
   "display": "fullscreen",
   "scope": "/",
-  "theme_color": "#481D24",
+  "theme_color": "#F5E6D0",
   "description": "A tool to practice your chess knight moves"
 }
