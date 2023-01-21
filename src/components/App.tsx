@@ -93,6 +93,13 @@ export default function App() {
             onDrop={({ targetSquare }) => placeKnight(targetSquare)}
             onSquareClick={(square) => placeKnight(square)}
             position={puzzleState.position}
+            squareStyles={{
+              [puzzleState.nextSquare]: {
+                background:
+                  "radial-gradient(circle, #f6ca6b 36%, transparent 40%)",
+                borderRadius: "50%"
+              }
+            }}
           />
         </div>
         <StraightProgressIndicator {...progressIndicatorProps} />
